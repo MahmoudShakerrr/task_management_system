@@ -182,12 +182,6 @@ Role-based authorization is enforced.
 Cache authorization validation is implemented.
 Employees cannot access unauthorized tasks/projects.
 
-👥 Team Members
-mahmoud shaker 1
-mahmoud tarek 2
-mohamed maher 3
-Member 4
-Member 5
 ✅ Final Notes
 The system enforces valid task lifecycle transitions.
 Redis improves API performance.
