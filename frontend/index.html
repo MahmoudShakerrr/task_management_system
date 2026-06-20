@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-body">
+
+<div class="auth-card">
+    <h1>Task Manager</h1>
+    <p>Login to your dashboard</p>
+
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+
+    <button class="btn-primary" onclick="login()">Login</button>
+
+    <p id="result" class="message"></p>
+
+    <a href="register.html">Create new account</a>
+</div>
+
+<script>
+const API_URL = "http://127.0.0.1:8000";
+
+async function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const result = document.getElementById("result");
+
+    const response = await fetch(`${API_URL}/users/login`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `username=${email}&password=${password}`
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        localStorage.setItem("token", data.access_token);
+        result.style.color = "green";
+        result.innerText = "Login success";
+        window.location.href = "dashboard.html";
+    } else {
+        result.style.color = "red";
+        result.innerText = data.detail || "Login failed";
+    }
+}
+</script>
+
+</body>
+</html>

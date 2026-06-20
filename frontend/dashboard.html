@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="navbar">
+    <h2>Task Management Dashboard</h2>
+    <button class="btn-danger" onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+    <div class="card">
+        <h2>Create Project</h2>
+        <input id="projectName" placeholder="Project name">
+        <textarea id="projectDescription" placeholder="Project description"></textarea>
+        <button class="btn-primary" onclick="createProject()">Create Project</button>
+        <p id="projectMessage" class="message"></p>
+    </div>
+
+    <div class="card">
+        <h2>Update Project</h2>
+        <input id="updateProjectId" type="number" placeholder="Project ID">
+        <input id="updateProjectName" placeholder="New project name">
+        <textarea id="updateProjectDescription" placeholder="New project description"></textarea>
+        <button class="btn-warning" onclick="updateProject()">Update Project</button>
+        <button class="btn-danger" onclick="deleteProject()">Delete Project</button>
+        <p id="updateProjectMessage" class="message"></p>
+    </div>
+
+    <div class="card">
+        <h2>Create Task</h2>
+        <input id="taskTitle" placeholder="Task title">
+        <textarea id="taskDescription" placeholder="Task description"></textarea>
+
+        <select id="taskPriority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+        </select>
+
+        <input id="taskProjectId" type="number" placeholder="Project ID">
+        <input id="taskAssigneeId" type="number" placeholder="Assignee user ID">
+
+        <button class="btn-primary" onclick="createTask()">Create Task</button>
+        <p id="taskMessage" class="message"></p>
+    </div>
+
+    <div class="card">
+        <h2>Update Task</h2>
+        <input id="updateTaskId" type="number" placeholder="Task ID">
+        <input id="updateTaskTitle" placeholder="New task title">
+        <textarea id="updateTaskDescription" placeholder="New task description"></textarea>
+
+        <select id="updateTaskPriority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+        </select>
+
+        <input id="updateTaskProjectId" type="number" placeholder="Project ID">
+        <input id="updateTaskAssigneeId" type="number" placeholder="Assignee user ID">
+
+        <button class="btn-warning" onclick="updateTask()">Update Task</button>
+        <button class="btn-danger" onclick="deleteTask()">Delete Task</button>
+        <p id="updateTaskMessage" class="message"></p>
+    </div>
+
+    <div class="card">
+        <h2>Projects</h2>
+        <button class="btn-primary" onclick="getProjects()">Load Projects</button>
+        <ul id="projects"></ul>
+    </div>
+
+    <div class="card">
+        <h2>Tasks</h2>
+
+        <input id="filterStatus" placeholder="Filter by status e.g. To Do">
+        <input id="filterPriority" placeholder="Filter by priority e.g. high">
+        <input id="filterAssignee" type="number" placeholder="Filter by assignee ID">
+
+        <button class="btn-primary" onclick="getTasks()">Load Tasks</button>
+        <button class="btn-warning" onclick="clearFilters()">Clear Filters</button>
+
+        <ul id="tasks"></ul>
+    </div>
+
+    <div class="card full">
+        <h2>Monitoring</h2>
+        <button class="btn-primary" onclick="getMonitoring()">Load Monitoring</button>
+        <button class="btn-danger" onclick="resetMonitoring()">Reset Monitoring</button>
+        <pre id="monitoring"></pre>
+    </div>
+
+</div>
+
+<script>
+const API_URL = "http://127.0.0.1:8000";
+
+function getToken() {
+    return localStorage.getItem("token");
+}
+
+function logout() {
+    localStorage.removeItem("token");
+    window.location.href = "index.html";
+}
+
+function headers() {
+    return {
+        "Authorization": `Bearer ${getToken()}`,
+        "Content-Type": "application/json"
+    };
+}
+
+function showMessage(elementId, message, success = true) {
+    const msg = document.getElementById(elementId);
+    msg.style.color = success ? "green" : "red";
+    msg.innerText = message;
+}
+
+async function createProject() {
+    const response = await fetch(`${API_URL}/projects/`, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+            name: document.getElementById("projectName").value,
+            description: document.getElementById("projectDescription").value
+        })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        showMessage("projectMessage", "Project created successfully");
+        getProjects();
+    } else {
+        showMessage("projectMessage", data.detail || "Error creating project", false);
+    }
+}
+
+async function updateProject() {
+    const projectId = Number(document.getElementById("updateProjectId").value);
+
+    const response = await fetch(`${API_URL}/projects/${projectId}`, {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify({
+            name: document.getElementById("updateProjectName").value,
+            description: document.getElementById("updateProjectDescription").value
+        })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        showMessage("updateProjectMessage", "Project updated successfully");
+        getProjects();
+    } else {
+        showMessage("updateProjectMessage", data.detail || "Error updating project", false);
+    }
+}
+
+async function deleteProject() {
+    const projectId = Number(document.getElementById("updateProjectId").value);
+
+    if (!confirm("Are you sure you want to delete this project?")) {
+        return;
+    }
+
+    const response = await fetch(`${API_URL}/projects/${projectId}`, {
+        method: "DELETE",
+        headers: headers()
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        showMessage("updateProjectMessage", data.message || "Project deleted successfully");
+        getProjects();
+    } else {
+        showMessage("updateProjectMessage", data.detail || "Error deleting project", false);
+    }
+}
+
+async function createTask() {
+    const response = await fetch(`${API_URL}/tasks/`, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+            title: document.getElementById("taskTitle").value,
+            description: document.getElementById("taskDescription").value,
+            priority: document.getElementById("taskPriority").value,
+            project_id: Number(document.getElementById("taskProjectId").value),
+            assignee_id: Number(document.getElementById("taskAssigneeId").value)
+        })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        showMessage("taskMessage", "Task created successfully");
+        getTasks();
+    } else {
+        showMessage("taskMessage", data.detail || "Error creating task", false);
+    }
+}
+
+async function updateTask() {
+    const taskId = Number(document.getElementById("updateTaskId").value);
+
+    const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify({
+            title: document.getElementById("updateTaskTitle").value,
+            description: document.getElementById("updateTaskDescription").value,
+            priority: document.getElementById("updateTaskPriority").value,
+            project_id: Number(document.getElementById("updateTaskProjectId").value),
+            assignee_id: Number(document.getElementById("updateTaskAssigneeId").value)
+        })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        showMessage("updateTaskMessage", "Task updated successfully");
+        getTasks();
+    } else {
+        showMessage("updateTaskMessage", data.detail || "Error updating task", false);
+    }
+}
+
+async function deleteTask() {
+    const taskId = Number(document.getElementById("updateTaskId").value);
+
+    if (!confirm("Are you sure you want to delete this task?")) {
+        return;
+    }
+
+    const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: headers()
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        showMessage("updateTaskMessage", data.message || "Task deleted successfully");
+        getTasks();
+    } else {
+        showMessage("updateTaskMessage", data.detail || "Error deleting task", false);
+    }
+}
+
+async function getProjects() {
+    const response = await fetch(`${API_URL}/projects/`, {
+        headers: {
+            "Authorization": `Bearer ${getToken()}`
+        }
+    });
+
+    const data = await response.json();
+    const list = document.getElementById("projects");
+    list.innerHTML = "";
+
+    if (!response.ok) {
+        list.innerHTML = `<li>${data.detail || "Error loading projects"}</li>`;
+        return;
+    }
+
+    data.forEach(project => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+            <b>${project.name}</b><br>
+            ID: ${project.id}<br>
+            Created By: ${project.created_by}<br>
+            ${project.description || ""}
+        `;
+        list.appendChild(li);
+    });
+}
+
+async function getTasks() {
+    const status = document.getElementById("filterStatus").value;
+    const priority = document.getElementById("filterPriority").value;
+    const assignee = document.getElementById("filterAssignee").value;
+
+    let query = [];
+
+    if (status) query.push(`status=${encodeURIComponent(status)}`);
+    if (priority) query.push(`priority=${encodeURIComponent(priority)}`);
+    if (assignee) query.push(`assignee_id=${assignee}`);
+
+    const url = `${API_URL}/tasks/${query.length ? "?" + query.join("&") : ""}`;
+
+    const response = await fetch(url, {
+        headers: {
+            "Authorization": `Bearer ${getToken()}`
+        }
+    });
+
+    const data = await response.json();
+    const list = document.getElementById("tasks");
+    list.innerHTML = "";
+
+    if (!response.ok) {
+        list.innerHTML = `<li>${data.detail || "Error loading tasks"}</li>`;
+        return;
+    }
+
+    data.forEach(task => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+            <b>${task.title}</b><br>
+            Task ID: ${task.id}<br>
+            <span class="status">Status: ${task.status}</span><br>
+            Priority: ${task.priority}<br>
+            Project ID: ${task.project_id}<br>
+            Assignee ID: ${task.assignee_id}<br>
+            Created By: ${task.created_by}<br>
+            <button class="btn-success" onclick="updateStatus(${task.id}, 'In Progress')">Start</button>
+            <button class="btn-warning" onclick="updateStatus(${task.id}, 'Done')">Done</button>
+        `;
+        list.appendChild(li);
+    });
+}
+
+function clearFilters() {
+    document.getElementById("filterStatus").value = "";
+    document.getElementById("filterPriority").value = "";
+    document.getElementById("filterAssignee").value = "";
+    getTasks();
+}
+
+async function updateStatus(taskId, newStatus) {
+    const response = await fetch(`${API_URL}/tasks/${taskId}/status`, {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify({
+            status: newStatus
+        })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        alert("Status updated");
+        getTasks();
+    } else {
+        alert(data.detail || "Error updating status");
+    }
+}
+
+async function getMonitoring() {
+    const response = await fetch(`${API_URL}/monitoring`);
+    const data = await response.json();
+
+    document.getElementById("monitoring").innerText =
+        JSON.stringify(data, null, 2);
+}
+
+async function resetMonitoring() {
+    const response = await fetch(`${API_URL}/monitoring/reset`, {
+        method: "DELETE"
+    });
+
+    if (response.ok) {
+        alert("Monitoring reset");
+        getMonitoring();
+    }
+}
+</script>
+
+</body>
+</html>
